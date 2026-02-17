@@ -11,11 +11,15 @@ resource "google_firestore_database" "backend" {
   name        = local.app_name
   location_id = "us-east1"
   type        = "FIRESTORE_NATIVE"
+
+  depends_on = [module.project_setup]
 }
 
 resource "google_firebase_project" "frontend" {
   provider = google-beta
   project  = module.project_setup.project_id
+
+  depends_on = [module.project_setup]
 }
 
 resource "google_firebase_web_app" "frontend" {
