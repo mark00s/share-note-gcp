@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
     bucket = "mj-tfstates"
-    prefix = local.project_name
+    prefix = "share-note-gcp" # Workspace będzie automatycznie dodany do ścieżki
   }
 }
