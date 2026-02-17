@@ -1,6 +1,7 @@
 resource "google_project" "created" {
   name            = var.project_name
   project_id      = var.project_name
+  org_id          = var.organization_id
   deletion_policy = "DELETE"
 }
 

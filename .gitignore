@@ -288,3 +288,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+env.sh
