@@ -11,12 +11,15 @@ terraform {
   }
 }
 
+# us-east1 is in Free Tier
+# You can pick any zone - resources will be region-wide anyway.
+
 provider "google" {
-  region = "us-east1"   # It's in Free Tier
-  zone   = "us-east1-c" # Should not affect project as the most resources are region-wide
+  region = "us-east1"
+  zone   = "us-east1-c"
 }
 
 provider "google-beta" {
-  region = "us-east1"   # It's in Free Tier
-  zone   = "us-east1-c" # Should not affect project as the most resources are region-wide
+  region = "us-east1"
+  zone   = "us-east1-c"
 }
