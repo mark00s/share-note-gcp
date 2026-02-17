@@ -20,3 +20,10 @@ variable "organization_id" {
   description = "Organization ID under which Project should be created (Default: null)"
   default     = null
 }
+
+variable "billing_account" {
+  type        = string
+  nullable    = true
+  description = "Billing account ID to attach to the project (Format: XXXXXX-XXXXXX-XXXXXX)"
+  default     = null
+}

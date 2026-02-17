@@ -1,6 +1,7 @@
 module "project_setup" {
   source = "./modules/project_setup"
 
+  billing_account = var.billing_account
   enabled_apis    = local.enabled_services
   organization_id = var.organization_id
   project_name    = local.project_name
