@@ -94,7 +94,7 @@ def read_note(note_id: str, payload: GetNote):
 
     if not doc.exists:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Note does not exist or has expired.",
         )
 
@@ -102,6 +102,8 @@ def read_note(note_id: str, payload: GetNote):
 
     provided_hash = hashlib.sha256(payload.password.encode()).hexdigest()
     if data.get("password_hash") != provided_hash:
-        raise HTTPException(status_code=403, detail="Invalid note password")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid note password"
+        )
 
     return {"content": data.get("content")}
