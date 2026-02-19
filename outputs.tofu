@@ -12,7 +12,7 @@ output "firestore_sa_email" {
 }
 
 output "firestore_gcloud_auth_command" {
-  value = "gcloud auth application-default login --impersonate-service-account=${module.project_setup.firestore_sa_email}@${module.project_setup.project_id}.iam.gserviceaccount.com"
+  value = "gcloud auth application-default login --impersonate-service-account=${module.project_setup.firestore_sa_email}"
 
   precondition {
     condition     = local.create_firestore_sa
