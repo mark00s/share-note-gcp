@@ -8,12 +8,18 @@ from fastapi.security import APIKeyHeader
 from google.cloud import firestore
 
 from constants import APP_NAME, FIREBASE_TTL_FIELD
-from envs import APP_API_KEY, FIRESTORE_DB_COLLECTION, FRONTEND_ADDRESS, GCP_PROJECT_ID
+from envs import (
+    APP_API_KEY,
+    FIRESTORE_DB,
+    FIRESTORE_DB_COLLECTION,
+    FRONTEND_ADDRESS,
+    GCP_PROJECT_ID,
+)
 from models import CreateNote, GetNote
 
 
 app = FastAPI(title=APP_NAME)
-db = firestore.Client(project=GCP_PROJECT_ID)
+db = firestore.Client(project=GCP_PROJECT_ID, database=FIRESTORE_DB)
 
 # CORS, let me in
 app.add_middleware(
