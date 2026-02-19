@@ -5,6 +5,9 @@ module "project_setup" {
   enabled_apis    = local.enabled_services
   organization_id = var.organization_id
   project_name    = local.project_name
+
+  create_firestore_sa = local.create_firestore_sa
+  app_name            = local.app_name
 }
 
 module "firestore" {

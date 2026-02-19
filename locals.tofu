@@ -8,5 +8,6 @@ locals {
     "firebase.googleapis.com",  # Firebase
   ]
 
+  create_firestore_sa   = true
   firestore_collections = ["notes", "dev-notes"]
 }
