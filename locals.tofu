@@ -7,4 +7,6 @@ locals {
     "firestore.googleapis.com", # Firestore
     "firebase.googleapis.com",  # Firebase
   ]
+
+  firestore_collections = ["notes", "dev-notes"]
 }
