@@ -41,6 +41,59 @@ app.add_middleware(
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)
 
 
+# Global exception handlers for GCP exceptions
+@app.exception_handler(gcp_exceptions.PermissionDenied)
+async def permission_denied_handler(_request, exc: gcp_exceptions.PermissionDenied):
+    """Handle GCP PermissionDenied exceptions globally."""
+    logging.error("Permission denied when accessing Firestore: %s", str(exc))
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Database service is not properly configured. Please contact support.",
+    ) from exc
+
+
+@app.exception_handler(gcp_exceptions.Unauthenticated)
+async def unauthenticated_handler(_request, exc: gcp_exceptions.Unauthenticated):
+    """Handle GCP Unauthenticated exceptions globally."""
+    logging.error("Authentication failed for Firestore: %s", str(exc))
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Database authentication failed. Please contact support.",
+    ) from exc
+
+
+@app.exception_handler(gcp_exceptions.ServiceUnavailable)
+async def service_unavailable_handler(_request, exc: gcp_exceptions.ServiceUnavailable):
+    """Handle GCP ServiceUnavailable exceptions globally."""
+    logging.error("Firestore service unavailable: %s", str(exc))
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Database service is temporarily unavailable. Please try again later.",
+    ) from exc
+
+
+@app.exception_handler(gcp_exceptions.RetryError)
+async def retry_error_handler(_request, exc: gcp_exceptions.RetryError):
+    """Handle GCP RetryError exceptions globally."""
+    logging.error("Firestore operation timed out: %s", str(exc))
+    raise HTTPException(
+        status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+        detail="Database operation timed out. Please try again later.",
+    ) from exc
+
+
+@app.exception_handler(gcp_exceptions.GoogleAPICallError)
+async def google_api_call_error_handler(
+    _request, exc: gcp_exceptions.GoogleAPICallError
+):
+    """Handle GCP GoogleAPICallError exceptions globally."""
+    logging.error("Google Cloud API error: %s", str(exc))
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="An error occurred while communicating with the database. Please try again later.",
+    ) from exc
+
+
 def verify_api_key(api_key: str = Security(api_key_header)):
     """Verify the API key provided in the request header.
 
@@ -99,51 +152,14 @@ def create_note(payload: CreateNote):
 
     logging.info("Document reference has been created")
 
-    try:
-        doc_ref.set(
-            {
-                "content": payload.content,
-                "password_hash": password_hash,
-                FIREBASE_TTL_FIELD: expire_datetime,
-            }
-        )
-        logging.info("Document has been saved successfully")
-    except gcp_exceptions.PermissionDenied as e:
-        logging.error("Permission denied when accessing Firestore: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is not properly configured. Please contact support.",
-        ) from e
-    except gcp_exceptions.Unauthenticated as e:
-        logging.error("Authentication failed for Firestore: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database authentication failed. Please contact support.",
-        ) from e
-    except gcp_exceptions.ServiceUnavailable as e:
-        logging.error("Firestore service unavailable: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is temporarily unavailable. Please try again later.",
-        ) from e
-    except gcp_exceptions.RetryError as e:
-        logging.error("Firestore operation timed out: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="Database operation timed out. Please try again later.",
-        ) from e
-    except gcp_exceptions.GoogleAPICallError as e:
-        logging.error("Google Cloud API error: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="An error occurred while saving the note. Please try again later.",
-        ) from e
-    except Exception as e:
-        logging.error("Unexpected error creating note: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred. Please try again later.",
-        ) from e
+    doc_ref.set(
+        {
+            "content": payload.content,
+            "password_hash": password_hash,
+            FIREBASE_TTL_FIELD: expire_datetime,
+        }
+    )
+    logging.info("Document has been saved successfully")
 
     return {"id": note_id, "expires_at": expire_datetime}
 
@@ -153,45 +169,9 @@ def read_note(note_id: str, payload: GetNote):
     doc_ref = db.collection(FIRESTORE_DB_COLLECTION).document(note_id)
     logging.info("Document reference has been created")
     logging.debug("note_id: %s", note_id)
-    try:
-        doc = doc_ref.get()
-        logging.info("Retrieved Document")
-    except gcp_exceptions.PermissionDenied as e:
-        logging.error("Permission denied when accessing Firestore: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is not properly configured. Please contact support.",
-        ) from e
-    except gcp_exceptions.Unauthenticated as e:
-        logging.error("Authentication failed for Firestore: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database authentication failed. Please contact support.",
-        ) from e
-    except gcp_exceptions.ServiceUnavailable as e:
-        logging.error("Firestore service unavailable: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database service is temporarily unavailable. Please try again later.",
-        ) from e
-    except gcp_exceptions.RetryError as e:
-        logging.error("Firestore operation timed out: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="Database operation timed out. Please try again later.",
-        ) from e
-    except gcp_exceptions.GoogleAPICallError as e:
-        logging.error("Google Cloud API error: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="An error occurred while retrieving the note. Please try again later.",
-        ) from e
-    except Exception as e:
-        logging.error("Unexpected error reading note: %s", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred. Please try again later.",
-        ) from e
+
+    doc = doc_ref.get()
+    logging.info("Retrieved Document")
 
     if not doc.exists:
         raise HTTPException(
