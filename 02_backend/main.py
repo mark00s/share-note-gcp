@@ -21,6 +21,7 @@ from envs import (
 from models import CreateNote, GetNote
 
 if not hasattr(logging, LOG_LEVEL):
+    logging.warning("LOG_LEVEL not set, defaulting to ERROR")
     logging.basicConfig(level=logging.ERROR)
 else:
     logging.basicConfig(level=LOG_LEVEL)
