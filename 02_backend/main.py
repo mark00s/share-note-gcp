@@ -41,57 +41,53 @@ app.add_middleware(
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)
 
 
-# Global exception handlers for GCP exceptions
-@app.exception_handler(gcp_exceptions.PermissionDenied)
-async def permission_denied_handler(_request, exc: gcp_exceptions.PermissionDenied):
-    """Handle GCP PermissionDenied exceptions globally."""
-    logging.error("Permission denied when accessing Firestore: %s", str(exc))
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="Database service is not properly configured. Please contact support.",
-    ) from exc
+# Global exception handler for all GCP exceptions
+@app.exception_handler(gcp_exceptions.GoogleAPIError)
+async def gcp_exception_handler(_request, exc: gcp_exceptions.GoogleAPIError):
+    """Handle all GCP exceptions globally using pattern matching.
 
+    This consolidated handler catches all Google Cloud Platform exceptions
+    and converts them to appropriate HTTPExceptions with user-friendly messages.
+    """
+    match exc:
+        case gcp_exceptions.PermissionDenied():
+            logging.error("Permission denied when accessing Firestore: %s", str(exc))
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database service is not properly configured. Please contact support.",
+            ) from exc
 
-@app.exception_handler(gcp_exceptions.Unauthenticated)
-async def unauthenticated_handler(_request, exc: gcp_exceptions.Unauthenticated):
-    """Handle GCP Unauthenticated exceptions globally."""
-    logging.error("Authentication failed for Firestore: %s", str(exc))
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="Database authentication failed. Please contact support.",
-    ) from exc
+        case gcp_exceptions.Unauthenticated():
+            logging.error("Authentication failed for Firestore: %s", str(exc))
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database authentication failed. Please contact support.",
+            ) from exc
 
+        case gcp_exceptions.ServiceUnavailable():
+            logging.error("Firestore service unavailable: %s", str(exc))
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database service is temporarily unavailable. Please try again later.",
+            ) from exc
 
-@app.exception_handler(gcp_exceptions.ServiceUnavailable)
-async def service_unavailable_handler(_request, exc: gcp_exceptions.ServiceUnavailable):
-    """Handle GCP ServiceUnavailable exceptions globally."""
-    logging.error("Firestore service unavailable: %s", str(exc))
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="Database service is temporarily unavailable. Please try again later.",
-    ) from exc
+        case gcp_exceptions.RetryError():
+            logging.error("Firestore operation timed out: %s", str(exc))
+            raise HTTPException(
+                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                detail="Database operation timed out. Please try again later.",
+            ) from exc
 
-
-@app.exception_handler(gcp_exceptions.RetryError)
-async def retry_error_handler(_request, exc: gcp_exceptions.RetryError):
-    """Handle GCP RetryError exceptions globally."""
-    logging.error("Firestore operation timed out: %s", str(exc))
-    raise HTTPException(
-        status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-        detail="Database operation timed out. Please try again later.",
-    ) from exc
-
-
-@app.exception_handler(gcp_exceptions.GoogleAPICallError)
-async def google_api_call_error_handler(
-    _request, exc: gcp_exceptions.GoogleAPICallError
-):
-    """Handle GCP GoogleAPICallError exceptions globally."""
-    logging.error("Google Cloud API error: %s", str(exc))
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="An error occurred while communicating with the database. Please try again later.",
-    ) from exc
+        case _:
+            # Catch-all for any other GCP exceptions
+            logging.error("Google Cloud API error: %s", str(exc))
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=(
+                    "An error occurred while communicating with the database. "
+                    "Please try again later."
+                ),
+            ) from exc
 
 
 def verify_api_key(api_key: str = Security(api_key_header)):
