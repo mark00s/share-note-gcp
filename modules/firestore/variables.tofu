@@ -34,3 +34,9 @@ variable "database_type" {
     error_message = "database_type must be one of FIRESTORE_NATIVE or DATASTORE_MODE."
   }
 }
+
+variable "deletion_policy" {
+  type        = string
+  description = "Deletion policy for the database"
+  default     = "DELETE"
+}

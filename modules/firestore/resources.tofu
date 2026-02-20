@@ -1,8 +1,9 @@
 resource "google_firestore_database" "this" {
-  project     = var.project_id
-  name        = var.databases_name
-  location_id = var.location_id
-  type        = var.database_type
+  project         = var.project_id
+  name            = var.databases_name
+  location_id     = var.location_id
+  type            = var.database_type
+  deletion_policy = var.deletion_policy
 }
 
 resource "google_firestore_field" "my_ttl_policy" {
