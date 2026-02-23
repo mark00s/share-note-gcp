@@ -1,5 +1,5 @@
-import { Component, type OnInit, inject } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import { Component, type OnInit, inject, PLATFORM_ID } from "@angular/core";
+import { CommonModule, isPlatformBrowser } from "@angular/common";
 import {
 	FormBuilder,
 	type FormGroup,
@@ -78,6 +78,7 @@ import * as CryptoJS from "crypto-js";
 export class CreateNoteComponent implements OnInit {
 	private fb = inject(FormBuilder);
 	private apiService = inject(ApiService);
+	private platformId = inject(PLATFORM_ID);
 
 	noteForm!: FormGroup;
 	hasApiKey = false;
@@ -86,7 +87,9 @@ export class CreateNoteComponent implements OnInit {
 	errorMessage: string | null = null;
 
 	ngOnInit() {
-		this.hasApiKey = !!localStorage.getItem("APP_API_KEY");
+		if (isPlatformBrowser(this.platformId)) {
+			this.hasApiKey = !!localStorage.getItem("APP_API_KEY");
+		}
 		this.noteForm = this.fb.group({
 			content: ["", [Validators.required, Validators.minLength(1)]],
 			password: ["", [Validators.required, Validators.minLength(4)]],
@@ -96,7 +99,7 @@ export class CreateNoteComponent implements OnInit {
 
 	saveApiKey(key: string) {
 		const trimmedKey = key.trim();
-		if (trimmedKey) {
+		if (trimmedKey && isPlatformBrowser(this.platformId)) {
 			localStorage.setItem("APP_API_KEY", trimmedKey);
 			this.hasApiKey = true;
 		}
@@ -129,7 +132,9 @@ export class CreateNoteComponent implements OnInit {
 
 				if (err.status === 401) {
 					this.errorMessage = "Bad API Key.";
-					localStorage.removeItem("APP_API_KEY");
+					if (isPlatformBrowser(this.platformId)) {
+						localStorage.removeItem("APP_API_KEY");
+					}
 					this.hasApiKey = false;
 				} else {
 					this.errorMessage = `Error connecting to the server. ${err}`;
