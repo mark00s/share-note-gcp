@@ -9,7 +9,7 @@ from fastapi.security import APIKeyHeader
 from google.api_core import exceptions as gcp_exceptions
 from google.cloud import firestore
 
-from constants import APP_NAME, FIREBASE_TTL_FIELD
+from constants import APP_NAME, FIREBASE_TTL_FIELD, NOTE_TTL
 from envs import (
     APP_API_KEY,
     FIRESTORE_DB,
@@ -125,6 +125,12 @@ def verify_api_key(api_key: str = Security(api_key_header)):
 
 @app.post("/note", dependencies=[Depends(verify_api_key)])
 def create_note(payload: CreateNote):
+    if payload.ttl_seconds > NOTE_TTL:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid Note TTL",
+        )
+
     # Picked v4 for better security
     # Pick v7 for performance
     note_id = str(uuid.uuid4())
