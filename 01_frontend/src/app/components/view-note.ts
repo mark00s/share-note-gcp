@@ -2,6 +2,7 @@ import { Component, type OnInit, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute } from "@angular/router";
 import { ApiService } from "../services/api";
+import { finalize } from "rxjs/operators";
 import * as CryptoJS from "crypto-js";
 
 @Component({
@@ -58,21 +59,26 @@ export class ViewNoteComponent implements OnInit {
 	}
 
 	fetchNote() {
-		if (!this.noteId) {
-			return;
-		}
+		if (!this.noteId) return;
 		this.isLoading = true;
-		this.apiService.getNote(this.noteId).subscribe({
-			next: (response) => {
-				this.encryptedContent = response.content ?? null;
-				this.isLoading = false;
-			},
-			error: (err) => {
-				this.errorMessage =
-					"Note does not exist, has expired, or you have been blocked by the server (missing API key).";
-				this.isLoading = false;
-			},
-		});
+		this.apiService
+			.getNote(this.noteId)
+			.pipe(
+				finalize(() => {
+					this.isLoading = false;
+				})
+			)
+			.subscribe({
+				next: (response) => {
+					console.log("getNote response:", response);
+					this.encryptedContent = response.content ?? null;
+				},
+				error: (err) => {
+					console.error("getNote error:", err);
+					this.errorMessage =
+						"Note does not exist, has expired, or you have been blocked by the server (missing API key).";
+				},
+			});
 	}
 
 	decryptNote(password: string) {
