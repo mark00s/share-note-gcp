@@ -22,10 +22,10 @@ export class ApiService {
 	private apiUrl = environment.backendUrl;
 
 	createNote(data: NoteCreateRequest): Observable<NoteResponse> {
-		return this.http.post<NoteResponse>(`${this.apiUrl}/notes/`, data);
+		return this.http.post<NoteResponse>(`${this.apiUrl}/note/`, data);
 	}
 
 	getNote(id: string): Observable<NoteResponse> {
-		return this.http.get<NoteResponse>(`${this.apiUrl}/notes/${id}`);
+		return this.http.get<NoteResponse>(`${this.apiUrl}/note/${id}`);
 	}
 }
