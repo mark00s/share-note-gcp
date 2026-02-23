@@ -18,7 +18,7 @@ from envs import (
     GCP_PROJECT_ID,
     LOG_LEVEL,
 )
-from models import CreateNote, GetNote
+from models import CreateNote
 
 if not hasattr(logging, LOG_LEVEL):
     logging.warning("LOG_LEVEL not set, defaulting to ERROR")
@@ -128,13 +128,6 @@ def create_note(payload: CreateNote):
     # Picked v4 for better security
     # Pick v7 for performance
     note_id = str(uuid.uuid4())
-    password_hash = payload.password
-
-    # If not empty, hash it one-way
-    if password_hash:
-        password_hash = hashlib.sha256(payload.password.encode()).hexdigest()
-
-    logging.info("Password hashed")
 
     expire_datetime = datetime.now(timezone.utc) + timedelta(
         seconds=payload.ttl_seconds
@@ -151,7 +144,6 @@ def create_note(payload: CreateNote):
     doc_ref.set(
         {
             "content": payload.content,
-            "password_hash": password_hash,
             FIREBASE_TTL_FIELD: expire_datetime,
         }
     )
@@ -161,7 +153,7 @@ def create_note(payload: CreateNote):
 
 
 @app.get("/note/{note_id}", dependencies=[Depends(verify_api_key)])
-def read_note(note_id: str, payload: GetNote):
+def read_note(note_id: str):
     doc_ref = db.collection(FIRESTORE_DB_COLLECTION).document(note_id)
     logging.info("Document reference has been created")
     logging.debug("note_id: %s", note_id)
@@ -176,18 +168,5 @@ def read_note(note_id: str, payload: GetNote):
         )
 
     data = doc.to_dict()
-
-    provided_hash = ""
-    # If password wasn't set, no need to calculate hash
-    if payload.password:
-        provided_hash = hashlib.sha256(payload.password.encode()).hexdigest()
-        logging.info("Password hash calculated")
-    else:
-        logging.info("Payload password empty. Skipping hashing")
-
-    if data.get("password_hash") != provided_hash:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid note password"
-        )
 
     return {"content": data.get("content")}
