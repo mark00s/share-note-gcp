@@ -44,11 +44,11 @@ import * as CryptoJS from "crypto-js";
             </div>
             <div>
               <label class="block text-gray-400 text-sm font-bold mb-2">Expiration time</label>
-              <select formControlName="ttl_seconds"
+              <select formControlName="ttl_minutes"
                       class="w-full p-3 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 outline-none">
-                <option [value]="0">minutes</option>
-                <option [value]="24">hours</option>
-                <option [value]="0">days</option>
+                <option [value]="5">5 minutes</option>
+                <option [value]="10">10 minutes</option>
+                <option [value]="15">15 minutes</option>
               </select>
             </div>
           </div>
@@ -93,7 +93,7 @@ export class CreateNoteComponent implements OnInit {
 		this.noteForm = this.fb.group({
 			content: ["", [Validators.required, Validators.minLength(1)]],
 			password: ["", [Validators.required, Validators.minLength(4)]],
-			ttl_seconds: [86400, Validators.required],
+			ttl_minutes: [86400, Validators.required],
 		});
 	}
 
@@ -119,7 +119,7 @@ export class CreateNoteComponent implements OnInit {
 
 		const payload: NoteCreateRequest = {
 			content: encryptedContent,
-			ttl_seconds: this.noteForm.value.ttl_seconds,
+			ttl_seconds: this.noteForm.value.ttl_minutes * 60,
 		};
 
 		this.apiService.createNote(payload).subscribe({

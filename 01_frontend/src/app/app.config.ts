@@ -9,10 +9,13 @@ import {
 	provideClientHydration,
 	withEventReplay,
 } from "@angular/platform-browser";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
+import { apiKeyInterceptor } from "./api-key.interceptor";
 
 export const appConfig: ApplicationConfig = {
 	providers: [
 		provideBrowserGlobalErrorListeners(),
+    	provideHttpClient(withInterceptors([apiKeyInterceptor])),
 		provideRouter(routes),
 		provideClientHydration(withEventReplay()),
 	],
