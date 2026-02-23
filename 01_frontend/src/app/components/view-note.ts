@@ -30,7 +30,7 @@ import * as CryptoJS from "crypto-js";
         </div>
 
         <div *ngIf="decryptedContent">
-          <div class="p-4 bg-gray-900 border border-green-500/50 rounded-lg text-green-100 whitespace-pre-wrap break-words">
+          <div class="p-4 bg-gray-900 border border-green-500/50 rounded-lg text-green-100 whitespace-pre-wrap wrap-break-word">
             {{ decryptedContent }}
           </div>
           <p class="text-xs text-gray-500 mt-4 text-center">Message decrypted successfully and securely on your device.</p>
