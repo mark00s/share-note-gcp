@@ -9,9 +9,10 @@ import {
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute } from "@angular/router";
 import { ApiService } from "../services/api";
-import { finalize } from "rxjs/operators";
+import { catchError, finalize, retry, timeout } from "rxjs/operators";
 import * as CryptoJS from "crypto-js";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { of } from "rxjs";
 
 @Component({
 	selector: "app-view-note",
@@ -75,18 +76,32 @@ export class ViewNoteComponent implements OnInit {
 		this.apiService
 			.getNote(this.noteId)
 			.pipe(
+				timeout(5 * 1000),
+				retry({ count: 2, delay: 1 * 1000 }),
 				takeUntilDestroyed(this.destroyRef),
+				catchError((err) => {
+					console.error("Failed to fetch note:", err);
+
+					if (err.name === "TimeoutError") {
+						this.errorMessage = "Request timed out. Please try again.";
+					} else if (err.status === 404) {
+						this.errorMessage = "Note not found or has expired.";
+					} else if (err.status === 401 || err.status === 403) {
+						this.errorMessage = "Access denied. Invalid or missing API key.";
+					} else {
+						this.errorMessage = "Failed to retrieve note. Please try again.";
+					}
+
+					// Return observable to complete the stream
+					return of(null);
+				}),
 				finalize(() => {
 					this.isLoading = false;
 				}),
 			)
 			.subscribe({
 				next: (response) => {
-					this.encryptedContent = response.content ?? null;
-				},
-				error: (err) => {
-					this.errorMessage =
-						"Note does not exist, has expired, or you have been blocked by the server (missing API key).";
+					this.encryptedContent = response?.content ?? null;
 				},
 			});
 	}
@@ -94,6 +109,7 @@ export class ViewNoteComponent implements OnInit {
 	decryptNote(password: string): void {
 		if (!password || !this.encryptedContent) {
 			this.errorMessage = "Password is required.";
+			this.cdr.markForCheck();
 			return;
 		}
 
@@ -114,12 +130,13 @@ export class ViewNoteComponent implements OnInit {
 				this.decryptedContent = originalText;
 				this.errorMessage = null;
 			}
+			this.cdr.markForCheck();
 		} catch (e) {
 			console.error("Decryption error:", e);
 			this.errorMessage =
 				"An error occurred during decryption. Please try again.";
 			this.decryptedContent = null;
+			this.cdr.markForCheck();
 		}
-		this.cdr.markForCheck();
 	}
 }
