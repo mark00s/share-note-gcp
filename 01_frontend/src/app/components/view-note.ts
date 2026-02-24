@@ -92,22 +92,33 @@ export class ViewNoteComponent implements OnInit {
 	}
 
 	decryptNote(password: string): void {
-		if (!password || !this.encryptedContent) return;
+		if (!password || !this.encryptedContent) {
+			this.errorMessage = "Password is required.";
+			return;
+		}
 
 		try {
 			const bytes = CryptoJS.AES.decrypt(this.encryptedContent, password);
 			const originalText = bytes.toString(CryptoJS.enc.Utf8);
 
-			if (!originalText) {
+			// Testing for garbage output
+			if (
+				!originalText ||
+				originalText.includes("\ufffd") ||
+				!/^[\x20-\x7E\s]*$/.test(originalText) === false
+			) {
 				this.errorMessage =
-					"Failed to decrypt the note. Wrong password or expired note.";
+					"Failed to decrypt. Incorrect password or corrupted data.";
+				this.decryptedContent = null;
 			} else {
 				this.decryptedContent = originalText;
 				this.errorMessage = null;
 			}
 		} catch (e) {
+			console.error("Decryption error:", e);
 			this.errorMessage =
-				"An error occurred during decryption. The password is incorrect or the file is corrupted.";
+				"An error occurred during decryption. Please try again.";
+			this.decryptedContent = null;
 		}
 		this.cdr.markForCheck();
 	}
