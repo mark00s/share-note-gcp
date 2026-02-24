@@ -1,4 +1,9 @@
-import { Component, type OnInit, inject } from "@angular/core";
+import {
+	Component,
+	type OnInit,
+	inject,
+	ChangeDetectorRef,
+} from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute } from "@angular/router";
 import { ApiService } from "../services/api";
@@ -43,6 +48,7 @@ import * as CryptoJS from "crypto-js";
 export class ViewNoteComponent implements OnInit {
 	private route = inject(ActivatedRoute);
 	private apiService = inject(ApiService);
+	private cdr = inject(ChangeDetectorRef);
 
 	noteId: string | null = null;
 	encryptedContent: string | null = null;
@@ -53,9 +59,8 @@ export class ViewNoteComponent implements OnInit {
 
 	ngOnInit() {
 		this.noteId = this.route.snapshot.paramMap.get("id");
-		if (this.noteId) {
-			this.fetchNote();
-		}
+
+		if (this.noteId) this.fetchNote();
 	}
 
 	fetchNote() {
@@ -66,17 +71,19 @@ export class ViewNoteComponent implements OnInit {
 			.pipe(
 				finalize(() => {
 					this.isLoading = false;
-				})
+				}),
 			)
 			.subscribe({
 				next: (response) => {
 					console.log("getNote response:", response);
 					this.encryptedContent = response.content ?? null;
+					this.cdr.markForCheck();
 				},
 				error: (err) => {
 					console.error("getNote error:", err);
 					this.errorMessage =
 						"Note does not exist, has expired, or you have been blocked by the server (missing API key).";
+					this.cdr.markForCheck();
 				},
 			});
 	}
@@ -98,5 +105,6 @@ export class ViewNoteComponent implements OnInit {
 			this.errorMessage =
 				"An error occurred during decryption. The password is incorrect or the file is corrupted.";
 		}
+		this.cdr.markForCheck();
 	}
 }

@@ -1,4 +1,10 @@
-import { Component, type OnInit, inject, PLATFORM_ID } from "@angular/core";
+import {
+	Component,
+	type OnInit,
+	inject,
+	PLATFORM_ID,
+	ChangeDetectorRef,
+} from "@angular/core";
 import { CommonModule, isPlatformBrowser } from "@angular/common";
 import {
 	FormBuilder,
@@ -79,6 +85,7 @@ export class CreateNoteComponent implements OnInit {
 	private fb = inject(FormBuilder);
 	private apiService = inject(ApiService);
 	private platformId = inject(PLATFORM_ID);
+	private cdr = inject(ChangeDetectorRef);
 
 	noteForm!: FormGroup;
 	hasApiKey = false;
@@ -93,7 +100,7 @@ export class CreateNoteComponent implements OnInit {
 		this.noteForm = this.fb.group({
 			content: ["", [Validators.required, Validators.minLength(1)]],
 			password: ["", [Validators.required, Validators.minLength(4)]],
-			ttl_minutes: [86400, Validators.required],
+			ttl_minutes: [15, Validators.required],
 		});
 	}
 
@@ -102,6 +109,9 @@ export class CreateNoteComponent implements OnInit {
 		if (trimmedKey && isPlatformBrowser(this.platformId)) {
 			localStorage.setItem("APP_API_KEY", trimmedKey);
 			this.hasApiKey = true;
+			this.cdr.markForCheck();
+		} else {
+			alert("Not a browser or password is missing");
 		}
 	}
 
@@ -126,32 +136,40 @@ export class CreateNoteComponent implements OnInit {
 			next: (response) => {
 				this.generatedLink = `${window.location.origin}/note/${response.id}`;
 				this.isSubmitting = false;
+				this.cdr.markForCheck();
 			},
 			error: (err) => {
 				this.isSubmitting = false;
 
 				if (err.status === 401) {
 					this.errorMessage = "Bad API Key.";
+					// Remove API Key
 					if (isPlatformBrowser(this.platformId)) {
 						localStorage.removeItem("APP_API_KEY");
 					}
+					// Ask user to re-enter API Key (after reload)
 					this.hasApiKey = false;
 				} else {
-					this.errorMessage = `Error connecting to the server. ${err}`;
+					// TODO: Handle other errors - might be unsafe due to backend endpoint being public
+					this.errorMessage = "Error connecting to the server.";
 				}
+				this.cdr.markForCheck();
 			},
 		});
 	}
 
-	copyLink() {
+	async copyLink() {
 		if (this.generatedLink) {
-			navigator.clipboard.writeText(this.generatedLink);
-			alert("Link copied!");
+			try {
+				await navigator.clipboard.writeText(this.generatedLink);
+				alert("Link copied!");
+			} catch (err) {}
 		}
 	}
 
 	resetForm() {
 		this.generatedLink = null;
-		this.noteForm.reset({ ttl_seconds: 86400 });
+		this.noteForm.reset({ ttl_minutes: 15 });
+		this.cdr.markForCheck();
 	}
 }
