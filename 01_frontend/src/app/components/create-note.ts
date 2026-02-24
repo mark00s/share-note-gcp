@@ -84,10 +84,10 @@ import * as CryptoJS from "crypto-js";
   `,
 })
 export class CreateNoteComponent implements OnInit {
-	private fb = inject(FormBuilder);
 	private apiService = inject(ApiService);
-	private platformId = inject(PLATFORM_ID);
 	private cdr = inject(ChangeDetectorRef);
+	private fb = inject(FormBuilder);
+	private platformId = inject(PLATFORM_ID);
 
 	noteForm!: FormGroup;
 	hasApiKey = false;

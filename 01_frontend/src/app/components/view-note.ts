@@ -4,12 +4,14 @@ import {
 	inject,
 	ChangeDetectorRef,
 	ChangeDetectionStrategy,
+	DestroyRef,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute } from "@angular/router";
 import { ApiService } from "../services/api";
 import { finalize } from "rxjs/operators";
 import * as CryptoJS from "crypto-js";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 @Component({
 	selector: "app-view-note",
@@ -48,9 +50,10 @@ import * as CryptoJS from "crypto-js";
   `,
 })
 export class ViewNoteComponent implements OnInit {
-	private route = inject(ActivatedRoute);
 	private apiService = inject(ApiService);
 	private cdr = inject(ChangeDetectorRef);
+	private destroyRef = inject(DestroyRef);
+	private route = inject(ActivatedRoute);
 
 	noteId: string | null = null;
 	encryptedContent: string | null = null;
@@ -72,21 +75,18 @@ export class ViewNoteComponent implements OnInit {
 		this.apiService
 			.getNote(this.noteId)
 			.pipe(
+				takeUntilDestroyed(this.destroyRef),
 				finalize(() => {
 					this.isLoading = false;
 				}),
 			)
 			.subscribe({
 				next: (response) => {
-					console.log("getNote response:", response);
 					this.encryptedContent = response.content ?? null;
-					this.cdr.markForCheck();
 				},
 				error: (err) => {
-					console.error("getNote error:", err);
 					this.errorMessage =
 						"Note does not exist, has expired, or you have been blocked by the server (missing API key).";
-					this.cdr.markForCheck();
 				},
 			});
 	}
