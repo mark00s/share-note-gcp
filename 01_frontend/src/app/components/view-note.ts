@@ -13,6 +13,7 @@ import { catchError, finalize, retry, timeout } from "rxjs/operators";
 import * as CryptoJS from "crypto-js";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { of } from "rxjs";
+import { HTTP_CONFIG } from "../constants";
 
 @Component({
 	selector: "app-view-note",
@@ -76,8 +77,11 @@ export class ViewNoteComponent implements OnInit {
 		this.apiService
 			.getNote(this.noteId)
 			.pipe(
-				timeout(5 * 1000),
-				retry({ count: 2, delay: 1 * 1000 }),
+				timeout(HTTP_CONFIG.TIMEOUT_MS),
+				retry({
+					count: HTTP_CONFIG.RETRY_COUNT,
+					delay: HTTP_CONFIG.RETRY_DELAY_MS,
+				}),
 				takeUntilDestroyed(this.destroyRef),
 				catchError((err) => {
 					console.error("Failed to fetch note:", err);
@@ -111,7 +115,13 @@ export class ViewNoteComponent implements OnInit {
 
 		if (!trimmedPassword || !this.encryptedContent) {
 			this.errorMessage = "Password is required.";
-			this.cdr.markForCheck();
+			this.safeMarkForCheck();
+			return;
+		}
+
+		if (trimmedPassword.length < 4) {
+			this.errorMessage = "Password must be at least 4 characters.";
+			this.safeMarkForCheck();
 			return;
 		}
 
@@ -122,12 +132,7 @@ export class ViewNoteComponent implements OnInit {
 			);
 			const originalText = bytes.toString(CryptoJS.enc.Utf8);
 
-			// Testing for garbage output
-			if (
-				!originalText ||
-				originalText.includes("\ufffd") ||
-				!/^[\x20-\x7E\s]*$/.test(originalText) === false
-			) {
+			if (!originalText || originalText.includes("\ufffd")) {
 				this.errorMessage =
 					"Failed to decrypt. Incorrect password or corrupted data.";
 				this.decryptedContent = null;
@@ -135,13 +140,21 @@ export class ViewNoteComponent implements OnInit {
 				this.decryptedContent = originalText;
 				this.errorMessage = null;
 			}
-			this.cdr.markForCheck();
+			this.safeMarkForCheck();
 		} catch (e) {
 			console.error("Decryption error:", e);
 			this.errorMessage =
 				"An error occurred during decryption. Please try again.";
 			this.decryptedContent = null;
+			this.safeMarkForCheck();
+		}
+	}
+
+	private safeMarkForCheck(): void {
+		try {
 			this.cdr.markForCheck();
+		} catch (e) {
+			// Component already destroyed, ignore
 		}
 	}
 }

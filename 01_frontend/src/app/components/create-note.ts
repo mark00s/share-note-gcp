@@ -5,6 +5,7 @@ import {
 	PLATFORM_ID,
 	ChangeDetectorRef,
 	ChangeDetectionStrategy,
+	DestroyRef,
 } from "@angular/core";
 import { CommonModule, isPlatformBrowser } from "@angular/common";
 import {
@@ -15,6 +16,9 @@ import {
 } from "@angular/forms";
 import { ApiService, type NoteCreateRequest } from "../services/api";
 import * as CryptoJS from "crypto-js";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { catchError, of, retry, throwError, timeout } from "rxjs";
+import { HTTP_CONFIG, VALIDATION } from "../constants";
 
 @Component({
 	selector: "app-create-note",
@@ -86,6 +90,7 @@ import * as CryptoJS from "crypto-js";
 export class CreateNoteComponent implements OnInit {
 	private apiService = inject(ApiService);
 	private cdr = inject(ChangeDetectorRef);
+	private destroyRef = inject(DestroyRef);
 	private fb = inject(FormBuilder);
 	private platformId = inject(PLATFORM_ID);
 
@@ -100,9 +105,21 @@ export class CreateNoteComponent implements OnInit {
 			this.hasApiKey = !!localStorage.getItem("APP_API_KEY");
 		}
 		this.noteForm = this.fb.group({
-			content: ["", [Validators.required, Validators.minLength(1)]],
-			password: ["", [Validators.required, Validators.minLength(4)]],
-			ttl_minutes: [15, Validators.required],
+			content: [
+				"",
+				[
+					Validators.required,
+					Validators.minLength(VALIDATION.MIN_CONTENT_LENGTH),
+				],
+			],
+			password: [
+				"",
+				[
+					Validators.required,
+					Validators.minLength(VALIDATION.MIN_PASSWORD_LENGTH),
+				],
+			],
+			ttl_minutes: [VALIDATION.MAX_TTL_MINUTES, Validators.required],
 		});
 	}
 
@@ -114,7 +131,7 @@ export class CreateNoteComponent implements OnInit {
 		} else {
 			this.errorMessage = "Not a browser or password is missing";
 		}
-		this.cdr.markForCheck();
+		this.safeMarkForCheck();
 	}
 
 	onSubmit(): void {
@@ -134,30 +151,45 @@ export class CreateNoteComponent implements OnInit {
 			ttl_seconds: this.noteForm.value.ttl_minutes * 60,
 		};
 
-		this.apiService.createNote(payload).subscribe({
-			next: (response) => {
-				this.generatedLink = `${window.location.origin}/note/${response.id}`;
-				this.isSubmitting = false;
-				this.cdr.markForCheck();
-			},
-			error: (err) => {
-				this.isSubmitting = false;
+		this.apiService
+			.createNote(payload)
+			.pipe(
+				timeout(HTTP_CONFIG.TIMEOUT_MS),
+				retry({
+					count: HTTP_CONFIG.RETRY_COUNT,
+					delay: HTTP_CONFIG.RETRY_DELAY_MS,
+				}),
+				takeUntilDestroyed(this.destroyRef),
+				catchError((err) => {
+					console.error("Failed to send note:", err);
+					this.isSubmitting = false;
 
-				if (err.status === 401) {
-					this.errorMessage = "Bad API Key.";
-					// Remove API Key
-					if (isPlatformBrowser(this.platformId)) {
-						localStorage.removeItem("APP_API_KEY");
+					if (err.name === "TimeoutError") {
+						this.errorMessage = "Request timed out. Please try again.";
+					} else if (err.status === 401) {
+						this.errorMessage = "Bad API Key.";
+						// Remove API Key
+						if (isPlatformBrowser(this.platformId)) {
+							localStorage.removeItem("APP_API_KEY");
+						}
+						// Ask user to re-enter API Key (after reload)
+						this.hasApiKey = false;
+					} else {
+						// TODO: Handle other errors - might be unsafe due to backend endpoint being public
+						this.errorMessage = "Error connecting to the server.";
 					}
-					// Ask user to re-enter API Key (after reload)
-					this.hasApiKey = false;
-				} else {
-					// TODO: Handle other errors - might be unsafe due to backend endpoint being public
-					this.errorMessage = "Error connecting to the server.";
-				}
-				this.cdr.markForCheck();
-			},
-		});
+
+					return of(null);
+				}),
+			)
+			.subscribe({
+				next: (response) => {
+					this.generatedLink = `${window.location.origin}/note/${response?.id}`;
+					this.isSubmitting = false;
+					this.safeMarkForCheck();
+				},
+				error: (err) => {},
+			});
 	}
 
 	async copyLink(): Promise<void> {
@@ -170,7 +202,7 @@ export class CreateNoteComponent implements OnInit {
 					err instanceof Error
 						? `Failed to copy: ${err.message}`
 						: "Failed to copy link to clipboard";
-				this.cdr.markForCheck();
+				this.safeMarkForCheck();
 			}
 		}
 	}
@@ -178,6 +210,14 @@ export class CreateNoteComponent implements OnInit {
 	resetForm(): void {
 		this.generatedLink = null;
 		this.noteForm.reset({ ttl_minutes: 15 });
-		this.cdr.markForCheck();
+		this.safeMarkForCheck();
+	}
+
+	private safeMarkForCheck(): void {
+		try {
+			this.cdr.markForCheck();
+		} catch (e) {
+			// Component already destroyed, ignore
+		}
 	}
 }
