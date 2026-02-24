@@ -1,0 +1,40 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: share-note-api
+    ports:
+      - "8000:80"
+    environment:
+      # Application configuration
+      APP_API_KEY: "D3VM0DE"
+      FRONTEND_ADDRESS: "http://localhost:4200"
+      FIRESTORE_DB: "share-note-gcp"
+      FIRESTORE_DB_COLLECTION: "dev-notes"
+      GCP_PROJECT_ID: "dev-share-note-gcp"
+      LOG_LEVEL: "WARNING"
+
+      # Google Cloud credentials
+      GOOGLE_APPLICATION_CREDENTIALS: "/root/.config/gcloud/application_default_credentials.json"
+    volumes:
+      # Mount application code for development (hot reload)
+      - ./app:/app/app:ro
+      # Mount Google Cloud Application Default Credentials
+      # This assumes you've run: gcloud auth application-default login
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:80/docs",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
