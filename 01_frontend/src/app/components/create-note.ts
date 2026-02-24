@@ -4,6 +4,7 @@ import {
 	inject,
 	PLATFORM_ID,
 	ChangeDetectorRef,
+	ChangeDetectionStrategy,
 } from "@angular/core";
 import { CommonModule, isPlatformBrowser } from "@angular/common";
 import {
@@ -18,6 +19,7 @@ import * as CryptoJS from "crypto-js";
 @Component({
 	selector: "app-create-note",
 	standalone: true,
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [CommonModule, ReactiveFormsModule],
 	template: `
   <div class="min-h-screen flex items-center justify-center p-4">
@@ -93,7 +95,7 @@ export class CreateNoteComponent implements OnInit {
 	generatedLink: string | null = null;
 	errorMessage: string | null = null;
 
-	ngOnInit() {
+	ngOnInit(): void {
 		if (isPlatformBrowser(this.platformId)) {
 			this.hasApiKey = !!localStorage.getItem("APP_API_KEY");
 		}
@@ -104,18 +106,18 @@ export class CreateNoteComponent implements OnInit {
 		});
 	}
 
-	saveApiKey(key: string) {
+	saveApiKey(key: string): void {
 		const trimmedKey = key.trim();
 		if (trimmedKey && isPlatformBrowser(this.platformId)) {
 			localStorage.setItem("APP_API_KEY", trimmedKey);
 			this.hasApiKey = true;
-			this.cdr.markForCheck();
 		} else {
-			alert("Not a browser or password is missing");
+			this.errorMessage = "Not a browser or password is missing";
 		}
+		this.cdr.markForCheck();
 	}
 
-	onSubmit() {
+	onSubmit(): void {
 		if (this.noteForm.invalid) return;
 
 		this.isSubmitting = true;
@@ -158,16 +160,22 @@ export class CreateNoteComponent implements OnInit {
 		});
 	}
 
-	async copyLink() {
+	async copyLink(): Promise<void> {
 		if (this.generatedLink) {
 			try {
 				await navigator.clipboard.writeText(this.generatedLink);
 				alert("Link copied!");
-			} catch (err) {}
+			} catch (err) {
+				this.errorMessage =
+					err instanceof Error
+						? `Failed to copy: ${err.message}`
+						: "Failed to copy link to clipboard";
+				this.cdr.markForCheck();
+			}
 		}
 	}
 
-	resetForm() {
+	resetForm(): void {
 		this.generatedLink = null;
 		this.noteForm.reset({ ttl_minutes: 15 });
 		this.cdr.markForCheck();

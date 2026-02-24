@@ -3,6 +3,7 @@ import {
 	type OnInit,
 	inject,
 	ChangeDetectorRef,
+	ChangeDetectionStrategy,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute } from "@angular/router";
@@ -14,6 +15,7 @@ import * as CryptoJS from "crypto-js";
 	selector: "app-view-note",
 	standalone: true,
 	imports: [CommonModule],
+	changeDetection: ChangeDetectionStrategy.OnPush,
 	template: `
     <div class="min-h-screen flex items-center justify-center p-4">
       <div class="max-w-xl w-full bg-gray-800 rounded-xl shadow-2xl border border-gray-700 p-8">
@@ -57,14 +59,15 @@ export class ViewNoteComponent implements OnInit {
 	isLoading = false;
 	errorMessage: string | null = null;
 
-	ngOnInit() {
+	ngOnInit(): void {
 		this.noteId = this.route.snapshot.paramMap.get("id");
 
 		if (this.noteId) this.fetchNote();
 	}
 
-	fetchNote() {
+	fetchNote(): void {
 		if (!this.noteId) return;
+
 		this.isLoading = true;
 		this.apiService
 			.getNote(this.noteId)
@@ -88,7 +91,7 @@ export class ViewNoteComponent implements OnInit {
 			});
 	}
 
-	decryptNote(password: string) {
+	decryptNote(password: string): void {
 		if (!password || !this.encryptedContent) return;
 
 		try {
@@ -96,7 +99,8 @@ export class ViewNoteComponent implements OnInit {
 			const originalText = bytes.toString(CryptoJS.enc.Utf8);
 
 			if (!originalText) {
-				this.errorMessage = "Wrong password! Failed to decrypt the note.";
+				this.errorMessage =
+					"Failed to decrypt the note. Wrong password or expired note.";
 			} else {
 				this.decryptedContent = originalText;
 				this.errorMessage = null;
