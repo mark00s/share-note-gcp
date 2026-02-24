@@ -107,14 +107,19 @@ export class ViewNoteComponent implements OnInit {
 	}
 
 	decryptNote(password: string): void {
-		if (!password || !this.encryptedContent) {
+		const trimmedPassword = password?.trim();
+
+		if (!trimmedPassword || !this.encryptedContent) {
 			this.errorMessage = "Password is required.";
 			this.cdr.markForCheck();
 			return;
 		}
 
 		try {
-			const bytes = CryptoJS.AES.decrypt(this.encryptedContent, password);
+			const bytes = CryptoJS.AES.decrypt(
+				this.encryptedContent,
+				trimmedPassword,
+			);
 			const originalText = bytes.toString(CryptoJS.enc.Utf8);
 
 			// Testing for garbage output
