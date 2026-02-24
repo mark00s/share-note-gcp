@@ -96,16 +96,20 @@ export class ViewNoteComponent implements OnInit {
 						this.errorMessage = "Failed to retrieve note. Please try again.";
 					}
 
+					this.safeMarkForCheck();
+
 					// Return observable to complete the stream
 					return of(null);
 				}),
 				finalize(() => {
 					this.isLoading = false;
+					this.safeMarkForCheck();
 				}),
 			)
 			.subscribe({
 				next: (response) => {
 					this.encryptedContent = response?.content ?? null;
+					this.safeMarkForCheck();
 				},
 			});
 	}

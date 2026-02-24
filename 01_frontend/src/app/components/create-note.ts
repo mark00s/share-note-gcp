@@ -17,7 +17,8 @@ import {
 import { ApiService, type NoteCreateRequest } from "../services/api";
 import * as CryptoJS from "crypto-js";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { catchError, of, retry, throwError, timeout } from "rxjs";
+import { of } from "rxjs";
+import { catchError, finalize, retry, timeout } from "rxjs/operators";
 import { HTTP_CONFIG, VALIDATION } from "../constants";
 
 @Component({
@@ -162,7 +163,6 @@ export class CreateNoteComponent implements OnInit {
 				takeUntilDestroyed(this.destroyRef),
 				catchError((err) => {
 					console.error("Failed to send note:", err);
-					this.isSubmitting = false;
 
 					if (err.name === "TimeoutError") {
 						this.errorMessage = "Request timed out. Please try again.";
@@ -179,16 +179,20 @@ export class CreateNoteComponent implements OnInit {
 						this.errorMessage = "Error connecting to the server.";
 					}
 
+					this.safeMarkForCheck();
+
 					return of(null);
+				}),
+				finalize(() => {
+					this.isSubmitting = false;
+					this.safeMarkForCheck();
 				}),
 			)
 			.subscribe({
 				next: (response) => {
 					this.generatedLink = `${window.location.origin}/note/${response?.id}`;
-					this.isSubmitting = false;
 					this.safeMarkForCheck();
 				},
-				error: (err) => {},
 			});
 	}
 
