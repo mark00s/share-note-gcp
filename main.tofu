@@ -55,6 +55,7 @@ resource "google_cloud_run_v2_service" "backend" {
     # Might be too strict
     max_instance_request_concurrency = 5
     timeout                          = "10s"
+    service_account                  = google_service_account.backend.email
 
     containers {
       # We are using "Hello" image to create CloudRun if Image is not yet pushed.
@@ -87,4 +88,16 @@ resource "google_cloud_run_v2_service_iam_member" "public_access" {
   name     = google_cloud_run_v2_service.backend.name
   role     = "roles/run.invoker"
   member   = "allUsers"
+}
+
+resource "google_service_account" "backend" {
+  account_id   = "${local.app_name}-sa"
+  project      = module.project_setup.project_id
+  display_name = "Service Account for ${local.app_name} Cloud Run (Backend)"
+}
+
+resource "google_project_iam_member" "backend_firestore_access" {
+  project = module.project_setup.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.backend.email}"
 }
