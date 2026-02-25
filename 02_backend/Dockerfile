@@ -8,7 +8,6 @@ ARG FIRESTORE_DB_COLLECTION="dev-notes"
 ARG GCP_PROJECT_ID="dev-share-note-gcp"
 ARG LOG_LEVEL="WARNING"
 
-
 # Copy the application into the container.
 COPY . /app
 
@@ -25,4 +24,4 @@ ENV GCP_PROJECT_ID=${GCP_PROJECT_ID}}
 ENV LOG_LEVEL=${LOG_LEVEL}}
 
 # Run the application.
-CMD ["/app/.venv/bin/fastapi", "run", "main.py", "--port", "80"]
+CMD ["/app/.venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
