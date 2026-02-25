@@ -25,7 +25,7 @@ export class ApiService {
 	}
 
 	createNote(data: NoteCreateRequest): Observable<NoteResponse> {
-		return this.http.post<NoteResponse>(`${this.apiUrl}/note/`, data);
+		return this.http.post<NoteResponse>(`${this.apiUrl}/note`, data);
 	}
 
 	getNote(id: string): Observable<NoteResponse> {
