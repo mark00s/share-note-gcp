@@ -15,11 +15,11 @@ terraform {
 # You can pick any zone - resources will be region-wide anyway.
 
 provider "google" {
-  region = "us-east1"
-  zone   = "us-east1-c"
+  region = var.region
+  zone   = "${var.region}-c"
 }
 
 provider "google-beta" {
-  region = "us-east1"
-  zone   = "us-east1-c"
+  region = var.region
+  zone   = "${var.region}-c"
 }

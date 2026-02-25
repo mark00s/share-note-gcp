@@ -9,3 +9,9 @@ variable "billing_account" {
   description = "Billing account ID (Format: XXXXXX-XXXXXX-XXXXXX)"
   default     = null
 }
+
+variable "region" {
+  type        = string
+  description = "Region where resources should be created"
+  default     = "us-east1"
+}
