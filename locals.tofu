@@ -10,4 +10,6 @@ locals {
 
   create_firestore_sa   = true
   firestore_collections = ["notes", "dev-notes"]
+
+  hello_image = "us-docker.pkg.dev/cloudrun/container/hello"
 }

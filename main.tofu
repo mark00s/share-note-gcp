@@ -57,9 +57,8 @@ resource "google_cloud_run_v2_service" "backend" {
     timeout                          = "10s"
 
     containers {
-      # We are using "Hello" image to create CloudRun to allow all dependencies.
-      # This will be replaced trough 'gcloud run deploy' command.
-      image = "us-docker.pkg.dev/cloudrun/container/hello"
+      # We are using "Hello" image to create CloudRun if Image is not yet pushed.
+      image = var.backend_image == null ? local.hello_image : var.backend_image
 
       resources {
         limits = {
@@ -80,4 +79,12 @@ resource "google_cloud_run_v2_service" "backend" {
     }
   }
   depends_on = [module.project_setup]
+}
+
+resource "google_cloud_run_v2_service_iam_member" "public_access" {
+  project  = google_cloud_run_v2_service.backend.project
+  location = google_cloud_run_v2_service.backend.location
+  name     = google_cloud_run_v2_service.backend.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
 }
