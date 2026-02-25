@@ -34,3 +34,8 @@ output "firebase_app_urls" {
   description = "List of URLs of the Firebase app"
   value       = google_firebase_web_app.frontend.app_urls
 }
+
+output "docker_registry" {
+  description = "Docker registry URL"
+  value       = google_artifact_registry_repository.backend.name
+}

@@ -35,6 +35,16 @@ resource "google_firebase_web_app" "frontend" {
   depends_on = [google_firebase_project.frontend]
 }
 
+resource "google_artifact_registry_repository" "backend" {
+  location      = var.region
+  project       = module.project_setup.project_id
+  repository_id = "${local.app_name}-backend"
+  description   = "Repository for ${local.app_name} backend Docker images"
+  format        = "DOCKER"
+
+  depends_on = [module.project_setup]
+}
+
 resource "google_cloud_run_v2_service" "backend" {
   name     = "${local.app_name}-backend"
   location = var.region
