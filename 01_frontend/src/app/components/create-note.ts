@@ -190,7 +190,11 @@ export class CreateNoteComponent implements OnInit {
 			)
 			.subscribe({
 				next: (response) => {
-					this.generatedLink = `${window.location.origin}/note/${response?.id}`;
+					if (response?.id) {
+						this.generatedLink = `${window.location.origin}/note/${response.id}`;
+					} else {
+						this.errorMessage = "Error connecting to the server.";
+					}
 					this.safeMarkForCheck();
 				},
 			});
