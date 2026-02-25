@@ -92,6 +92,7 @@ export class ViewNoteComponent implements OnInit {
 						this.errorMessage = "Note not found or has expired.";
 					} else if (err.status === 401 || err.status === 403) {
 						this.errorMessage = "Access denied. Invalid or missing API key.";
+						localStorage.removeItem("APP_API_KEY");
 					} else {
 						this.errorMessage = "Failed to retrieve note. Please try again.";
 					}
