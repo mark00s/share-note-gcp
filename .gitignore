@@ -184,3 +184,6 @@ env.sh
 # =============================================================================
 
 *.log
+
+# Frontend runtime configuration (contains secrets)
+01_frontend/public/assets/config/config.json

@@ -34,3 +34,40 @@ resource "google_firebase_web_app" "frontend" {
 
   depends_on = [google_firebase_project.frontend]
 }
+
+resource "google_cloud_run_v2_service" "backend" {
+  name     = "${local.app_name}-backend"
+  location = var.region
+  project  = module.project_setup.project_id
+
+  template {
+    # TODO: Parametrize
+    # Might be too strict
+    max_instance_request_concurrency = 5
+    timeout                          = "10s"
+
+    containers {
+      # We are using "Hello" image to create CloudRun to allow all dependencies.
+      # This will be replaced trough 'gcloud run deploy' command.
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "512Mi"
+        }
+        cpu_idle = true
+      }
+
+      ports {
+        container_port = 80
+      }
+    }
+    # Scaling down to 0 instances to save money when not used
+    scaling {
+      max_instance_count = 1
+      min_instance_count = 0
+    }
+  }
+  depends_on = [module.project_setup]
+}

@@ -19,3 +19,18 @@ output "firestore_gcloud_auth_command" {
     error_message = "create_firestore_sa must be true to get firestore_gcloud_auth_command"
   }
 }
+
+output "cloud_run_url" {
+  description = "Public URL of the backend service"
+  value       = google_cloud_run_v2_service.backend.uri
+}
+
+output "firebase_app_id" {
+  description = "ID of the Firebase app"
+  value       = google_firebase_web_app.frontend.app_id
+}
+
+output "firebase_app_urls" {
+  description = "List of URLs of the Firebase app"
+  value       = google_firebase_web_app.frontend.app_urls
+}

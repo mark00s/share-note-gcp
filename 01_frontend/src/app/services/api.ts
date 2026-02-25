@@ -1,8 +1,7 @@
 import { Injectable, inject } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import type { Observable } from "rxjs";
-import { environment } from "../../environments/environment";
-
+import { ConfigService } from "../config.service";
 export interface NoteCreateRequest {
 	content: string;
 	ttl_seconds: number;
@@ -19,7 +18,11 @@ export interface NoteResponse {
 })
 export class ApiService {
 	private http = inject(HttpClient);
-	private apiUrl = environment.backendUrl;
+	private configService = inject(ConfigService);
+
+	private get apiUrl(): string {
+		return this.configService.backendUrl;
+	}
 
 	createNote(data: NoteCreateRequest): Observable<NoteResponse> {
 		return this.http.post<NoteResponse>(`${this.apiUrl}/note/`, data);
