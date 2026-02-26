@@ -99,6 +99,9 @@ export class ViewNoteComponent implements OnInit {
 
 					this.safeMarkForCheck();
 
+					//TODO: If APP_API_KEY has been removed, redirect to `/notes`
+					// Or implement separate component for API_KEY Providing
+
 					// Return observable to complete the stream
 					return of(null);
 				}),
