@@ -9,3 +9,8 @@ export const VALIDATION = {
 	MIN_CONTENT_LENGTH: 1,
 	MIN_PASSWORD_LENGTH: 4,
 } as const;
+
+export const HTTP_STORAGE = {
+	// TODO: Should I make it configurable?
+	API_KEY_STORAGE_KEY: "APP_API_KEY",
+};

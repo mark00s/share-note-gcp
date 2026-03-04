@@ -9,12 +9,15 @@ import { provideHttpClient, withInterceptors } from "@angular/common/http";
 
 import { routes } from "./app.routes";
 import { apiKeyInterceptor } from "./api-key.interceptor";
+import { authErrorInterceptor } from "./auth-error.interceptor";
 import { ConfigService } from "./config.service";
 
 export const appConfig: ApplicationConfig = {
 	providers: [
 		provideBrowserGlobalErrorListeners(),
-		provideHttpClient(withInterceptors([apiKeyInterceptor])),
+		provideHttpClient(
+			withInterceptors([apiKeyInterceptor, authErrorInterceptor]),
+		),
 		provideRouter(routes),
 		provideAppInitializer(() => inject(ConfigService).loadConfig()),
 	],

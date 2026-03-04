@@ -1,16 +1,18 @@
 import type { HttpInterceptorFn } from "@angular/common/http";
-import { inject, PLATFORM_ID } from "@angular/core";
-import { isPlatformBrowser } from "@angular/common";
+import { inject } from "@angular/core";
+import { AuthService } from "./auth.service";
 
+/**
+ * HTTP interceptor that adds the API key to outgoing requests.
+ * Uses AuthService to retrieve the API key in an SSR-safe manner.
+ */
 export const apiKeyInterceptor: HttpInterceptorFn = (req, next) => {
-	const platformId = inject(PLATFORM_ID);
+	const authService = inject(AuthService);
 
-	if (!isPlatformBrowser(platformId)) {
+	const apiKey = authService.getApiKey();
+	if (!apiKey) {
 		return next(req);
 	}
-
-	const apiKey = localStorage.getItem("APP_API_KEY");
-	if (!apiKey) return next(req);
 
 	const clonedRequest = req.clone({
 		setHeaders: {
