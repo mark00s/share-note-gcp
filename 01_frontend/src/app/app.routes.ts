@@ -1,5 +1,5 @@
 import type { Routes } from "@angular/router";
-import { CreateNoteComponent } from "./components/create-note";
+import { CreateNoteComponent } from "./create-note.component";
 import { ViewNoteComponent } from "./components/view-note";
 
 export const routes: Routes = [

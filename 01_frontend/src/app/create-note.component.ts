@@ -14,12 +14,12 @@ import {
 	ReactiveFormsModule,
 	Validators,
 } from "@angular/forms";
-import { ApiService, type NoteCreateRequest } from "../api.service";
+import { ApiService, type NoteCreateRequest } from "./api.service";
 import * as CryptoJS from "crypto-js";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { of } from "rxjs";
 import { catchError, finalize, retry, timeout } from "rxjs/operators";
-import { HTTP_CONFIG, VALIDATION } from "../constants";
+import { HTTP_CONFIG, VALIDATION } from "./constants";
 
 @Component({
 	selector: "app-create-note",
