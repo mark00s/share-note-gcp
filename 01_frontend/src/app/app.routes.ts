@@ -1,6 +1,6 @@
 import type { Routes } from "@angular/router";
 import { CreateNoteComponent } from "./create-note.component";
-import { ViewNoteComponent } from "./components/view-note";
+import { ViewNoteComponent } from "./view-note.component";
 
 export const routes: Routes = [
 	{ path: "", redirectTo: "note", pathMatch: "full" },

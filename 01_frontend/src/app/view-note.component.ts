@@ -8,12 +8,12 @@ import {
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { ActivatedRoute } from "@angular/router";
-import { ApiService } from "../api.service";
+import { ApiService } from "./api.service";
 import { catchError, finalize, retry, timeout } from "rxjs/operators";
 import * as CryptoJS from "crypto-js";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { of } from "rxjs";
-import { HTTP_CONFIG } from "../constants";
+import { HTTP_CONFIG } from "./constants";
 
 @Component({
 	selector: "app-view-note",
