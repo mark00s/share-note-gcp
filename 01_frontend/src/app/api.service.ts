@@ -1,7 +1,7 @@
 import { Injectable, inject } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import type { Observable } from "rxjs";
-import { ConfigService } from "../config.service";
+import { ConfigService } from "./config.service";
 export interface NoteCreateRequest {
 	content: string;
 	ttl_seconds: number;
