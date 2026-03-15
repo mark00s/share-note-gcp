@@ -24,7 +24,10 @@ import { ERROR_MESSAGE } from '../../constants';
         (keyup.enter)="onSaveApiKey(apiKeyInput.value)"
       />
       @if (errorMessage) {
-        <div class="bg-red-900/50 border border-red-500 text-red-200 p-3 rounded-lg mb-4 text-sm">
+        <div
+          class="bg-red-900/50 border border-red-500 text-red-200 p-3 rounded-lg mb-4 text-sm"
+          data-testid="api-key-error"
+        >
           {{ errorMessage }}
         </div>
       }
