@@ -1,6 +1,7 @@
 import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../auth.service';
+import { ERROR_MESSAGE } from '../../constants';
 
 /**
  * Reusable component for API key input.
@@ -45,7 +46,7 @@ export class ApiKeyInputComponent {
     this.errorMessage = null;
 
     if (!key || !key.trim()) {
-      this.errorMessage = 'API key cannot be empty.';
+      this.errorMessage = ERROR_MESSAGE.API_KEY_IS_EMPTY;
       return;
     }
 
