@@ -1,5 +1,5 @@
-import { inject, Injectable } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
+import { Injectable, inject } from "@angular/core";
 import { firstValueFrom } from "rxjs";
 
 export interface AppConfig {

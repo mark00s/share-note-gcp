@@ -1,3 +1,4 @@
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
 import {
 	type ApplicationConfig,
 	inject,
@@ -5,10 +6,8 @@ import {
 	provideBrowserGlobalErrorListeners,
 } from "@angular/core";
 import { provideRouter } from "@angular/router";
-import { provideHttpClient, withInterceptors } from "@angular/common/http";
-
-import { routes } from "./app.routes";
 import { apiKeyInterceptor } from "./api-key.interceptor";
+import { routes } from "./app.routes";
 import { authErrorInterceptor } from "./auth-error.interceptor";
 import { ConfigService } from "./config.service";
 

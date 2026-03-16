@@ -1,5 +1,5 @@
-import { Injectable, signal, inject, PLATFORM_ID } from "@angular/core";
 import { isPlatformBrowser } from "@angular/common";
+import { Injectable, inject, PLATFORM_ID, signal } from "@angular/core";
 import { HTTP_STORAGE } from "./constants";
 
 /**

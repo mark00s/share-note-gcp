@@ -1,29 +1,29 @@
+import { CommonModule } from "@angular/common";
 import {
-  Component,
-  type OnInit,
-  inject,
-  ChangeDetectorRef,
-  ChangeDetectionStrategy,
-  DestroyRef,
-  effect,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
-import { ApiService } from './api.service';
-import { AuthService } from './auth.service';
-import { ApiKeyInputComponent } from './components/api-key-input/api-key-input.component';
-import { catchError, finalize, retry, timeout } from 'rxjs/operators';
-import * as CryptoJS from 'crypto-js';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { of } from 'rxjs';
-import { HTTP_CONFIG } from './constants';
+	ChangeDetectionStrategy,
+	ChangeDetectorRef,
+	Component,
+	DestroyRef,
+	effect,
+	inject,
+	type OnInit,
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ActivatedRoute } from "@angular/router";
+import * as CryptoJS from "crypto-js";
+import { of } from "rxjs";
+import { catchError, finalize, retry, timeout } from "rxjs/operators";
+import { ApiService } from "./api.service";
+import { AuthService } from "./auth.service";
+import { ApiKeyInputComponent } from "./components/api-key-input/api-key-input.component";
+import { HTTP_CONFIG } from "./constants";
 
 @Component({
-  selector: 'app-view-note',
-  standalone: true,
-  imports: [CommonModule, ApiKeyInputComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+	selector: "app-view-note",
+	standalone: true,
+	imports: [CommonModule, ApiKeyInputComponent],
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	template: `
     <div class="min-h-screen flex items-center justify-center p-4">
       <div class="max-w-xl w-full bg-gray-800 rounded-xl shadow-2xl border border-gray-700 p-8">
         @if (!authService.hasApiKey()) {
@@ -85,122 +85,131 @@ import { HTTP_CONFIG } from './constants';
   `,
 })
 export class ViewNoteComponent implements OnInit {
-  private apiService = inject(ApiService);
-  protected authService = inject(AuthService);
-  private cdr = inject(ChangeDetectorRef);
-  private destroyRef = inject(DestroyRef);
-  private route = inject(ActivatedRoute);
+	private apiService = inject(ApiService);
+	protected authService = inject(AuthService);
+	private cdr = inject(ChangeDetectorRef);
+	private destroyRef = inject(DestroyRef);
+	private route = inject(ActivatedRoute);
 
-  noteId: string | null = null;
-  encryptedContent: string | null = null;
-  decryptedContent: string | null = null;
+	noteId: string | null = null;
+	encryptedContent: string | null = null;
+	decryptedContent: string | null = null;
 
-  isLoading = false;
-  errorMessage: string | null = null;
+	isLoading = false;
+	errorMessage: string | null = null;
 
-  constructor() {
-    // Automatically fetch the note when API key becomes available
-    effect(() => {
-      if (this.authService.hasApiKey() && this.noteId && !this.encryptedContent) {
-        this.fetchNote();
-      }
-    });
-  }
+	constructor() {
+		// Automatically fetch the note when API key becomes available
+		effect(() => {
+			if (
+				this.authService.hasApiKey() &&
+				this.noteId &&
+				!this.encryptedContent
+			) {
+				this.fetchNote();
+			}
+		});
+	}
 
-  ngOnInit(): void {
-    this.noteId = this.route.snapshot.paramMap.get('id');
+	ngOnInit(): void {
+		this.noteId = this.route.snapshot.paramMap.get("id");
 
-    // Fetch the note immediately if user already has an API key
-    if (this.noteId && this.authService.hasApiKey()) {
-      this.fetchNote();
-    }
-  }
+		// Fetch the note immediately if user already has an API key
+		if (this.noteId && this.authService.hasApiKey()) {
+			this.fetchNote();
+		}
+	}
 
-  fetchNote(): void {
-    if (!this.noteId) return;
+	fetchNote(): void {
+		if (!this.noteId) return;
 
-    this.isLoading = true;
-    this.apiService
-      .getNote(this.noteId)
-      .pipe(
-        timeout(HTTP_CONFIG.TIMEOUT_MS),
-        retry({
-          count: HTTP_CONFIG.RETRY_COUNT,
-          delay: HTTP_CONFIG.RETRY_DELAY_MS,
-        }),
-        takeUntilDestroyed(this.destroyRef),
-        catchError((err) => {
-          console.error('Failed to fetch note:', err);
+		this.isLoading = true;
+		this.apiService
+			.getNote(this.noteId)
+			.pipe(
+				timeout(HTTP_CONFIG.TIMEOUT_MS),
+				retry({
+					count: HTTP_CONFIG.RETRY_COUNT,
+					delay: HTTP_CONFIG.RETRY_DELAY_MS,
+				}),
+				takeUntilDestroyed(this.destroyRef),
+				catchError((err) => {
+					console.error("Failed to fetch note:", err);
 
-          if (err.name === 'TimeoutError') {
-            this.errorMessage = 'Request timed out. Please try again.';
-          } else if (err.status === 404) {
-            this.errorMessage = 'Note not found or has expired.';
-          } else if (err.status === 401 || err.status === 403) {
-            this.errorMessage = 'Access denied. Invalid or missing API key.';
-            // API key is automatically cleared by authErrorInterceptor
-          } else {
-            this.errorMessage = 'Failed to retrieve note. Please try again.';
-          }
+					if (err.name === "TimeoutError") {
+						this.errorMessage = "Request timed out. Please try again.";
+					} else if (err.status === 404) {
+						this.errorMessage = "Note not found or has expired.";
+					} else if (err.status === 401 || err.status === 403) {
+						this.errorMessage = "Access denied. Invalid or missing API key.";
+						// API key is automatically cleared by authErrorInterceptor
+					} else {
+						this.errorMessage = "Failed to retrieve note. Please try again.";
+					}
 
-          this.safeMarkForCheck();
+					this.safeMarkForCheck();
 
-          // Return observable to complete the stream
-          return of(null);
-        }),
-        finalize(() => {
-          this.isLoading = false;
-          this.safeMarkForCheck();
-        }),
-      )
-      .subscribe({
-        next: (response) => {
-          this.encryptedContent = response?.content ?? null;
-          this.safeMarkForCheck();
-        },
-      });
-  }
+					// Return observable to complete the stream
+					return of(null);
+				}),
+				finalize(() => {
+					this.isLoading = false;
+					this.safeMarkForCheck();
+				}),
+			)
+			.subscribe({
+				next: (response) => {
+					this.encryptedContent = response?.content ?? null;
+					this.safeMarkForCheck();
+				},
+			});
+	}
 
-  decryptNote(password: string): void {
-    const trimmedPassword = password?.trim();
+	decryptNote(password: string): void {
+		const trimmedPassword = password?.trim();
 
-    if (!trimmedPassword || !this.encryptedContent) {
-      this.errorMessage = 'Password is required.';
-      this.safeMarkForCheck();
-      return;
-    }
+		if (!trimmedPassword || !this.encryptedContent) {
+			this.errorMessage = "Password is required.";
+			this.safeMarkForCheck();
+			return;
+		}
 
-    if (trimmedPassword.length < 4) {
-      this.errorMessage = 'Password must be at least 4 characters.';
-      this.safeMarkForCheck();
-      return;
-    }
+		if (trimmedPassword.length < 4) {
+			this.errorMessage = "Password must be at least 4 characters.";
+			this.safeMarkForCheck();
+			return;
+		}
 
-    try {
-      const bytes = CryptoJS.AES.decrypt(this.encryptedContent, trimmedPassword);
-      const originalText = bytes.toString(CryptoJS.enc.Utf8);
+		try {
+			const bytes = CryptoJS.AES.decrypt(
+				this.encryptedContent,
+				trimmedPassword,
+			);
+			const originalText = bytes.toString(CryptoJS.enc.Utf8);
 
-      if (!originalText || originalText.includes('\ufffd')) {
-        this.errorMessage = 'Failed to decrypt. Incorrect password or corrupted data.';
-        this.decryptedContent = null;
-      } else {
-        this.decryptedContent = originalText;
-        this.errorMessage = null;
-      }
-      this.safeMarkForCheck();
-    } catch (e) {
-      console.error('Decryption error:', e);
-      this.errorMessage = 'An error occurred during decryption. Please try again.';
-      this.decryptedContent = null;
-      this.safeMarkForCheck();
-    }
-  }
+			if (!originalText || originalText.includes("\ufffd")) {
+				this.errorMessage =
+					"Failed to decrypt. Incorrect password or corrupted data.";
+				this.decryptedContent = null;
+			} else {
+				this.decryptedContent = originalText;
+				this.errorMessage = null;
+			}
+			this.safeMarkForCheck();
+		} catch (e) {
+			console.error("Decryption error:", e);
+			this.errorMessage =
+				"An error occurred during decryption. Please try again.";
+			this.decryptedContent = null;
+			this.safeMarkForCheck();
+		}
+	}
 
-  private safeMarkForCheck(): void {
-    try {
-      this.cdr.markForCheck();
-    } catch (e) {
-      // Component already destroyed, ignore
-    }
-  }
+	private safeMarkForCheck(): void {
+		try {
+			this.cdr.markForCheck();
+		} catch (_) {
+			// Component already destroyed, ignore
+		}
+	}
 }

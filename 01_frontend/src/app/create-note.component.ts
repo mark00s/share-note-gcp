@@ -1,28 +1,33 @@
+import { CommonModule } from "@angular/common";
 import {
-  Component,
-  type OnInit,
-  inject,
-  ChangeDetectorRef,
-  ChangeDetectionStrategy,
-  DestroyRef,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, type FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ApiService, type NoteCreateRequest } from './api.service';
-import { AuthService } from './auth.service';
-import { ApiKeyInputComponent } from './components/api-key-input/api-key-input.component';
-import * as CryptoJS from 'crypto-js';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { of } from 'rxjs';
-import { catchError, finalize, retry, timeout } from 'rxjs/operators';
-import { HTTP_CONFIG, VALIDATION } from './constants';
+	ChangeDetectionStrategy,
+	ChangeDetectorRef,
+	Component,
+	DestroyRef,
+	inject,
+	type OnInit,
+} from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import {
+	FormBuilder,
+	type FormGroup,
+	ReactiveFormsModule,
+	Validators,
+} from "@angular/forms";
+import * as CryptoJS from "crypto-js";
+import { of } from "rxjs";
+import { catchError, finalize, retry, timeout } from "rxjs/operators";
+import { ApiService, type NoteCreateRequest } from "./api.service";
+import { AuthService } from "./auth.service";
+import { ApiKeyInputComponent } from "./components/api-key-input/api-key-input.component";
+import { HTTP_CONFIG, VALIDATION } from "./constants";
 
 @Component({
-  selector: 'app-create-note',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ReactiveFormsModule, ApiKeyInputComponent],
-  template: `
+	selector: "app-create-note",
+	standalone: true,
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	imports: [CommonModule, ReactiveFormsModule, ApiKeyInputComponent],
+	template: `
     <div class="min-h-screen flex items-center justify-center p-4">
       <div class="max-w-xl w-full bg-gray-800 rounded-xl shadow-2xl border border-gray-700 p-8">
         @if (!authService.hasApiKey()) {
@@ -117,111 +122,123 @@ import { HTTP_CONFIG, VALIDATION } from './constants';
   `,
 })
 export class CreateNoteComponent implements OnInit {
-  private apiService = inject(ApiService);
-  protected authService = inject(AuthService);
-  private cdr = inject(ChangeDetectorRef);
-  private destroyRef = inject(DestroyRef);
-  private fb = inject(FormBuilder);
+	private apiService = inject(ApiService);
+	protected authService = inject(AuthService);
+	private cdr = inject(ChangeDetectorRef);
+	private destroyRef = inject(DestroyRef);
+	private fb = inject(FormBuilder);
 
-  noteForm!: FormGroup;
-  isSubmitting = false;
-  generatedLink: string | null = null;
-  errorMessage: string | null = null;
+	noteForm!: FormGroup;
+	isSubmitting = false;
+	generatedLink: string | null = null;
+	errorMessage: string | null = null;
 
-  ngOnInit(): void {
-    this.noteForm = this.fb.group({
-      content: ['', [Validators.required, Validators.minLength(VALIDATION.MIN_CONTENT_LENGTH)]],
-      password: ['', [Validators.required, Validators.minLength(VALIDATION.MIN_PASSWORD_LENGTH)]],
-      ttl_minutes: [VALIDATION.MAX_TTL_MINUTES, Validators.required],
-    });
-  }
+	ngOnInit(): void {
+		this.noteForm = this.fb.group({
+			content: [
+				"",
+				[
+					Validators.required,
+					Validators.minLength(VALIDATION.MIN_CONTENT_LENGTH),
+				],
+			],
+			password: [
+				"",
+				[
+					Validators.required,
+					Validators.minLength(VALIDATION.MIN_PASSWORD_LENGTH),
+				],
+			],
+			ttl_minutes: [VALIDATION.MAX_TTL_MINUTES, Validators.required],
+		});
+	}
 
-  onSubmit(): void {
-    if (this.noteForm.invalid) return;
+	onSubmit(): void {
+		if (this.noteForm.invalid) return;
 
-    this.isSubmitting = true;
-    this.errorMessage = null;
+		this.isSubmitting = true;
+		this.errorMessage = null;
 
-    // Encrypting message
-    const encryptedContent = CryptoJS.AES.encrypt(
-      this.noteForm.value.content,
-      this.noteForm.value.password,
-    ).toString();
+		// Encrypting message
+		const encryptedContent = CryptoJS.AES.encrypt(
+			this.noteForm.value.content,
+			this.noteForm.value.password,
+		).toString();
 
-    const payload: NoteCreateRequest = {
-      content: encryptedContent,
-      ttl_seconds: this.noteForm.value.ttl_minutes * 60,
-    };
+		const payload: NoteCreateRequest = {
+			content: encryptedContent,
+			ttl_seconds: this.noteForm.value.ttl_minutes * 60,
+		};
 
-    this.apiService
-      .createNote(payload)
-      .pipe(
-        timeout(HTTP_CONFIG.TIMEOUT_MS),
-        retry({
-          count: HTTP_CONFIG.RETRY_COUNT,
-          delay: HTTP_CONFIG.RETRY_DELAY_MS,
-        }),
-        takeUntilDestroyed(this.destroyRef),
-        catchError((err) => {
-          console.error('Failed to send note:', err);
+		this.apiService
+			.createNote(payload)
+			.pipe(
+				timeout(HTTP_CONFIG.TIMEOUT_MS),
+				retry({
+					count: HTTP_CONFIG.RETRY_COUNT,
+					delay: HTTP_CONFIG.RETRY_DELAY_MS,
+				}),
+				takeUntilDestroyed(this.destroyRef),
+				catchError((err) => {
+					console.error("Failed to send note:", err);
 
-          if (err.name === 'TimeoutError') {
-            this.errorMessage = 'Request timed out. Please try again.';
-          } else if (err.status === 401) {
-            // API key is automatically cleared by authErrorInterceptor
-            this.errorMessage = 'Bad API Key. Please re-enter your API key.';
-          } else {
-            // TODO: Handle other errors - might be unsafe due to backend endpoint being public
-            this.errorMessage = 'Error connecting to the server.';
-          }
+					if (err.name === "TimeoutError") {
+						this.errorMessage = "Request timed out. Please try again.";
+					} else if (err.status === 401) {
+						// API key is automatically cleared by authErrorInterceptor
+						this.errorMessage = "Bad API Key. Please re-enter your API key.";
+					} else {
+						// TODO: Handle other errors - might be unsafe due to backend endpoint being public
+						this.errorMessage = "Error connecting to the server.";
+					}
 
-          this.safeMarkForCheck();
+					this.safeMarkForCheck();
 
-          return of(null);
-        }),
-        finalize(() => {
-          this.isSubmitting = false;
-          this.safeMarkForCheck();
-        }),
-      )
-      .subscribe({
-        next: (response) => {
-          if (response?.id) {
-            this.generatedLink = `${window.location.origin}/note/${response.id}`;
-          } else {
-            this.errorMessage = 'Error connecting to the server.';
-          }
-          this.safeMarkForCheck();
-        },
-      });
-  }
+					return of(null);
+				}),
+				finalize(() => {
+					this.isSubmitting = false;
+					this.safeMarkForCheck();
+				}),
+			)
+			.subscribe({
+				next: (response) => {
+					if (response?.id) {
+						this.generatedLink = `${window.location.origin}/note/${response.id}`;
+					} else {
+						this.errorMessage = "Error connecting to the server.";
+					}
+					this.safeMarkForCheck();
+				},
+			});
+	}
 
-  async copyLink(): Promise<void> {
-    if (this.generatedLink) {
-      try {
-        await navigator.clipboard.writeText(this.generatedLink);
-        alert('Link copied!');
-      } catch (err) {
-        this.errorMessage =
-          err instanceof Error
-            ? `Failed to copy: ${err.message}`
-            : 'Failed to copy link to clipboard';
-        this.safeMarkForCheck();
-      }
-    }
-  }
+	async copyLink(): Promise<void> {
+		if (this.generatedLink) {
+			try {
+				await navigator.clipboard.writeText(this.generatedLink);
+				alert("Link copied!");
+			} catch (err) {
+				this.errorMessage =
+					err instanceof Error
+						? `Failed to copy: ${err.message}`
+						: "Failed to copy link to clipboard";
+				this.safeMarkForCheck();
+			}
+		}
+	}
 
-  resetForm(): void {
-    this.generatedLink = null;
-    this.noteForm.reset({ ttl_minutes: 15 });
-    this.safeMarkForCheck();
-  }
+	resetForm(): void {
+		this.generatedLink = null;
+		this.noteForm.reset({ ttl_minutes: 15 });
+		this.safeMarkForCheck();
+	}
 
-  private safeMarkForCheck(): void {
-    try {
-      this.cdr.markForCheck();
-    } catch (e) {
-      // Component already destroyed, ignore
-    }
-  }
+	private safeMarkForCheck(): void {
+		try {
+			this.cdr.markForCheck();
+		} catch (_) {
+			// Component already destroyed, ignore
+		}
+	}
 }
